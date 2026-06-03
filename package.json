@@ -4,5 +4,10 @@
   "main": "main.js",
   "scripts": {
     "start": "node main.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "open": "^10.1.0"
   }
 }
