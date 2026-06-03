@@ -1,0 +1,12 @@
+
+- user: salkhanardak@gmail.com
+- movie: Insidious: The Last Key
+- cinema: Lumiera Cinema, ЦУМ, Алматы
+- seat: B3
+- session: 20:00
+
+- user: salkhanardak@gmail.com
+- movie: Avatar: The Way of Water
+- cinema: Abay Avenue, Алматы
+- seat: VIP6
+- session: 21:00
