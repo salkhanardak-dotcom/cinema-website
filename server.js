@@ -109,7 +109,7 @@ let movies = [
   },
   {
     id: 10,
-    title: "Гладиатор",
+    title: "",
     rating: 8.8,
     price: 2800,
     studentDiscount: 20,
