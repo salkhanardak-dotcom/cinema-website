@@ -1,369 +1,278 @@
 const express = require("express");
-const session = require("express-session");
-const fs = require("fs");
-const path = require("path");
+const bcrypt = require("bcryptjs");
+const sqlite3 = require("sqlite3").verbose();
 
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-app.use(session({
-  secret: "cinema-secret",
-  resave: false,
-  saveUninitialized: true
-}));
+/* =======================
+   DATABASE (Деректер қоры)
+======================= */
+const db = new sqlite3.Database("./database.db");
 
-const DB_FILE = path.join(__dirname, "database.json");
+db.serialize(() => {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            email TEXT UNIQUE,
+            password TEXT
+        )
+    `);
+});
 
-
-function loadDB() {
-  if (!fs.existsSync(DB_FILE)) return [];
-  return JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
-}
-
-function saveDB(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-}
-
-let movies = [
-  {
-    id: 1,
-    title: "Мстители: Финал",
-    rating: 9.2,
-    price: 2500,
-    studentDiscount: 25,
-    schoolDiscount: 40,
-    sessions: ["2026-06-10 10:30", "2026-06-10 14:00", "2026-06-10 18:20", "2026-06-10 21:40"]
-  },
-  {
-    id: 2,
-    title: "Аватар: Путь воды",
-    rating: 8.8,
-    price: 3200,
-    studentDiscount: 25,
-    schoolDiscount: 40,
-    sessions: ["2026-06-10 11:15", "2026-06-10 15:30", "2026-06-10 19:00", "2026-06-10 22:15"]
-  },
-  {
-    id: 3,
-    title: "Дюна 2",
-    rating: 8.9,
-    price: 3000,
-    studentDiscount: 20,
-    schoolDiscount: 35,
-    sessions: ["2026-06-10 09:45", "2026-06-10 13:20", "2026-06-10 17:10", "2026-06-10 20:50"]
-  },
-  {
-    id: 4,
-    title: "Оппенгеймер",
-    rating: 8.7,
-    price: 2800,
-    studentDiscount: 20,
-    schoolDiscount: 35,
-    sessions: ["2026-06-10 12:00", "2026-06-10 16:10", "2026-06-10 19:45", "2026-06-10 22:30"]
-  },
-  {
-    id: 5,
-    title: "Форсаж 10",
-    rating: 7.9,
-    price: 2600,
-    studentDiscount: 25,
-    schoolDiscount: 40,
-    sessions: ["2026-06-10 10:00", "2026-06-10 13:45", "2026-06-10 17:30", "2026-06-10 21:15"]
-  },
-  {
-    id: 6,
-    title: "Джокер",
-    rating: 8.5,
-    price: 2700,
-    studentDiscount: 20,
-    schoolDiscount: 35,
-    sessions: ["2026-06-10 11:40", "2026-06-10 15:00", "2026-06-10 18:40", "2026-06-10 22:00"]
-  },
-  {
-    id: 7,
-    title: "Человек-паук: Нет пути домой",
-    rating: 8.6,
-    price: 2900,
-    studentDiscount: 25,
-    schoolDiscount: 40,
-    sessions: ["2026-06-10 09:30", "2026-06-10 13:10", "2026-06-10 16:50", "2026-06-10 20:30"]
-  },
-  {
-    id: 8,
-    title: "Интерстеллар",
-    rating: 9.0,
-    price: 3500,
-    studentDiscount: 20,
-    schoolDiscount: 30,
-    sessions: ["2026-06-10 12:30", "2026-06-10 16:00", "2026-06-10 19:30", "2026-06-10 23:00"]
-  },
-  {
-    id: 9,
-    title: "Матрица",
-    rating: 8.4,
-    price: 2400,
-    studentDiscount: 25,
-    schoolDiscount: 40,
-    sessions: ["2026-06-10 10:50", "2026-06-10 14:20", "2026-06-10 18:00", "2026-06-10 21:20"]
-  },
-  {
-    id: 10,
-    title: "Өш 2",
-    rating: 8.8,
-    price: 2800,
-    studentDiscount: 20,
-    schoolDiscount: 35,
-    sessions: ["2026-06-10 11:00", "2026-06-10 14:40", "2026-06-10 18:15", "2026-06-10 22:10"]
-  }
-];
-
-const cinemas = {
-  Mega: "Mega Park, Алматы",
-  City: "Dostyk Cinema, Алматы",
-  Almaty: "Lumiera Cinema, Алматы"
-};
-
-const style = `
+// Ортақ дизайн үшін айнымалы (CSS)
+const CSS_STYLE = `
 <style>
-body{background:#1b0b0b;color:white;font-family:sans-serif;text-align:center;padding:30px}
-.card{background:#2a1111;padding:20px;margin:15px auto;width:420px;border-radius:12px}
-button{padding:10px 20px;background:#c0392b;color:white;border:none;border-radius:8px;cursor:pointer}
-input,select{padding:10px;width:250px;margin:5px}
-a{color:#ff6b6b}
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #141414; color: #fff; margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+    h1, h2, h3 { color: #e50914; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+    .card { background: #1f1f1f; border-radius: 8px; padding: 20px; margin: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 320px; transition: 0.3s; border: 1px solid #333; }
+    .card:hover { transform: translateY(-5px); border-color: #e50914; }
+    .btn { background: #e50914; color: white; border: none; padding: 10px 25px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+    .btn:hover { background: #b80710; }
+    .btn-secondary { background: #444; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-secondary:hover { background: #555; }
+    input { width: 100%; padding: 10px; margin: 10px 0; background: #333; border: 1px solid #444; color: white; border-radius: 4px; box-sizing: border-box; }
+    input:focus { border-color: #e50914; outline: none; }
+    .flex-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+    .seat-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
+    .ticket { border: 2px dashed #e50914; padding: 25px; width: 350px; background: #222; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); position: relative; }
+    .ticket::before, .ticket::after { content: ''; position: absolute; top: 50%; width: 20px; height: 20px; background: #141414; border-radius: 50%; }
+    .ticket::before { left: -11px; } .ticket::after { right: -11px; }
 </style>
 `;
 
+/* =======================
+   MOVIES DATA (Кинолар тізімі)
+======================= */
+let movies = [
+    { id: 1, title: "Avengers: Endgame", rating: 9.2, price: 1500, img: "🎬" },
+    { id: 2, title: "Interstellar", rating: 9.5, price: 2000, img: "🚀" },
+    { id: 3, title: "The Dark Knight", rating: 8.7, price: 1200, img: "🦇" },
+];
 
-app.get("/", (req,res)=>{
-  const sorted = [...movies].sort((a,b)=>b.rating-a.rating);
+let selectedMovie = null;
+let selectedCinema = null;
+let selectedSeat = null;
 
-  res.send(`
-    ${style}
-    <h1>🎬 CINEMA SYSTEM</h1>
+const seats = [
+    ["A1","A2","A3","A4","A5","A6"],
+    ["B1","B2","B3","B4","B5","B6"],
+    ["C1","C2","C3","C4","C5","C6"],
+    ["VIP1","VIP2","VIP3","VIP4","VIP5","VIP6"],
+];
 
-    ${sorted.map(m=>`
-      <div class="card">
-        <h2>${m.title}</h2>
-        <p>⭐ ${m.rating}</p>
-        <p>💰 ${m.price} ₸</p>
+/* =======================
+   HOME PAGE (Авторизация және Кино таңдау бәрі бір жерде)
+======================= */
+app.get("/", (req, res) => {
+    let sorted = [...movies].sort((a, b) => b.rating - a.rating);
+    
+    res.send(`
+        ${CSS_STYLE}
+        <h1>🍿 КИНЕМАТОГРАФ ЖҮЙЕСІ</h1>
+        
+        <div class="flex-container" style="margin-bottom: 40px;">
+            <div class="card">
+                <h3>🔐 Тіркелу</h3>
+                <form method="POST" action="/auth/register">
+                    <input name="name" placeholder="Атыңыз" required />
+                    <input name="email" placeholder="Email" type="email" required />
+                    <input name="password" placeholder="Құпия сөз" type="password" required />
+                    <button class="btn">Тіркелу</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>🚪 Жүйеге кіру</h3>
+                <form method="POST" action="/auth/login">
+                    <input name="email" placeholder="Email" type="email" required />
+                    <input name="password" placeholder="Құпия сөз" type="password" required />
+                    <button class="btn" style="background: #0080ff;">Кіру</button>
+                </form>
+            </div>
+        </div>
 
-        <form method="POST" action="/movie">
-          <input type="hidden" name="id" value="${m.id}">
-          <button>Таңдау</button>
+        <hr style="width: 80%; border: 1px solid #333; margin-bottom: 30px;">
+
+        <h2>🎬 Қазір көрсетілімдегі фильмдер</h2>
+        <div class="flex-container">
+            ${sorted.map(m => `
+                <div class="card">
+                    <div style="font-size: 50px; text-align: center;">${m.img}</div>
+                    <h2>${m.title}</h2>
+                    <p style="color: #ffcc00;">⭐ Рейтинг: ${m.rating} / 10</p>
+                    <p>💰 Билет бағасы: <b>${m.price} ₸</b></p>
+                    <form method="POST" action="/movie">
+                        <input type="hidden" name="id" value="${m.id}">
+                        <button class="btn" style="width:100%;">Билет брондау</button>
+                    </form>
+                </div>
+            `).join("")}
+        </div>
+    `);
+});
+
+/* AUTH PROCESSORS */
+app.post("/auth/register", (req, res) => {
+    const { name, email, password } = req.body;
+    const hash = bcrypt.hashSync(password, 10);
+    db.run("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", [name, email, hash], (err) => {
+        if (err) return res.send(`${CSS_STYLE} <div class="card"><h3>❌ Қателік</h3><p>Мұндай қолданушы бар немесе деректер дұрыс емес.</p><a href="/" class="btn-secondary">Қайту</a></div>`);
+        res.send(`${CSS_STYLE} <div class="card"><h3>✅ Сәтті!</h3><p>Тіркелу сәтті аяқталды. Төмендегі батырмамен артқа қайтып кіріңіз.</p><a href="/" class="btn-secondary">Басты бет</a></div>`);
+    });
+});
+
+app.post("/auth/login", (req, res) => {
+    const { email, password } = req.body;
+    db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+            return res.send(`${CSS_STYLE} <div class="card"><h3>❌ Қателік</h3><p>Email немесе құпия сөз қате!</p><a href="/" class="btn-secondary">Қайта көру</a></div>`);
+        }
+        res.send(`${CSS_STYLE} <div class="card"><h3>✅ Қош келдіңіз, ${user.name}!</h3><p>Жүйеге сәтті кірдіңіз. Енді төменнен кино таңдай аласыз.</p><a href="/" class="btn-secondary">Киноларды көру</a></div>`);
+    });
+});
+
+app.post("/movie", (req, res) => {
+    selectedMovie = movies.find(m => m.id == req.body.id);
+    res.redirect("/cinema");
+});
+
+/* =======================
+   CINEMA PAGE (Кинотеатр таңдау)
+======================= */
+app.get("/cinema", (req, res) => {
+    if (!selectedMovie) return res.redirect("/");
+    res.send(`
+        ${CSS_STYLE}
+        <h1>🏢 КИНОТЕАТР ТАҢДАУ</h1>
+        <p style="font-size: 18px;">Фильм: <b style="color:#e50914;">${selectedMovie.title}</b></p>
+        
+        <form method="POST" action="/cinema" style="display: flex; gap: 20px; margin-top: 30px;">
+            <button name="cinema" value="Mega Cinema" class="btn" style="padding: 20px 30px;">🌐 Mega Cinema (ALMATY)</button>
+            <button name="cinema" value="Esentai IMAX" class="btn" style="padding: 20px 30px; background: #0080ff;">💎 Esentai IMAX</button>
+            <button name="cinema" value="Kinopark 11" class="btn" style="padding: 20px 30px; background: #e5a909;">🍿 Kinopark 11</button>
         </form>
-      </div>
-    `).join("")}
-  `);
+    `);
 });
 
-
-app.post("/movie",(req,res)=>{
-  req.session.movie = movies.find(m=>m.id == req.body.id);
-  res.redirect("/cinema");
+app.post("/cinema", (req, res) => {
+    selectedCinema = req.body.cinema;
+    res.redirect("/seats");
 });
 
-// ===================== CINEMA =====================
-app.get("/cinema",(req,res)=>{
-  res.send(`
-    ${style}
-    <h2>🏢 Кинотеатр таңда</h2>
+/* =======================
+   SEATS PAGE (Орын таңдау)
+======================= */
+app.get("/seats", (req, res) => {
+    if (!selectedMovie || !selectedCinema) return res.redirect("/");
+    res.send(`
+        ${CSS_STYLE}
+        <h1>🪑 ОРЫН ТАҢДАУ СХЕМАСЫ</h1>
+        <p>🎬 Кино: <b>${selectedMovie.title}</b> | 🏢 Кинотеатр: <b>${selectedCinema}</b></p>
+        
+        <div style="background: #333; width: 400px; text-align: center; padding: 5px; margin: 30px 0; border-radius: 0 0 50% 50%; font-weight: bold; font-size: 12px; color: #aaa;">
+            ЭКРАН ОЫНДА
+        </div>
 
-    <form method="POST" action="/cinema">
-      <button name="cinema" value="Mega">Mega</button>
-      <button name="cinema" value="City">City</button>
-      <button name="cinema" value="Almaty">Almaty</button>
-    </form>
-  `);
+        <div style="margin-top: 20px;">
+            ${seats.map(row => `
+                <div class="seat-row">
+                    ${row.map(s => `
+                        <form method="POST" action="/seat" style="margin:0">
+                            <input type="hidden" name="seat" value="${s}">
+                            <button style="width:55px; height:40px; cursor:pointer; background:${s.includes("VIP") ? "#ffcc00" : "#2ecc71"}; color: #000; font-weight: bold; border: none; border-radius: 5px; transition: 0.2s;">
+                                ${s}
+                            </button>
+                        </form>
+                    `).join("")}
+                </div>
+            `).join("")}
+        </div>
+        
+        <div style="margin-top: 30px; display: flex; gap: 20px; font-size: 14px;">
+            <div><span style="display:inline-block; width:15px; height:15px; background:#2ecc71; border-radius:3px;"></span> Кәдімгі орын</div>
+            <div><span style="display:inline-block; width:15px; height:15px; background:#ffcc00; border-radius:3px;"></span> VIP Орын</div>
+        </div>
+    `);
 });
 
-app.post("/cinema",(req,res)=>{
-  req.session.cinema = req.body.cinema;
-  res.redirect("/session");
+app.post("/seat", (req, res) => {
+    selectedSeat = req.body.seat;
+    res.redirect("/payment");
 });
 
+/* =======================
+   PAYMENT PAGE (Төлем жасау)
+======================= */
+app.get("/payment", (req, res) => {
+    if (!selectedMovie || !selectedCinema || !selectedSeat) return res.redirect("/");
+    res.send(`
+        ${CSS_STYLE}
+        <h1>💳 ҚАУІПСІЗ ТӨЛЕМ ЖАСАУ</h1>
+        
+        <div class="card" style="width: 350px;">
+            <h3 style="margin-top:0; text-align:center;">Тапсырыс мәліметі</h3>
+            <p>🎬 Фильм: <b>${selectedMovie.title}</b></p>
+            <p>🏢 Кинотеатр: <b>${selectedCinema}</b></p>
+            <p>🪑 Таңдалған орын: <b style="color: #ffcc00;">${selectedSeat}</b></p>
+            <p>💵 Төлем соммасы: <b style="font-size: 20px; color:#e50914;">${selectedMovie.price} ₸</b></p>
+        </div>
 
-app.get("/session",(req,res)=>{
-  const movie = req.session.movie;
-  if(!movie) return res.redirect("/");
-
-  res.send(`
-    ${style}
-    <h2>${movie.title}</h2>
-
-    ${movie.sessions.map(t=>`
-      <form method="POST" action="/session">
-        <button name="time" value="${t}">${t}</button>
-      </form>
-    `).join("")}
-  `);
+        <div class="card" style="width: 350px;">
+            <form method="POST" action="/pay">
+                <label>Карта нөмірі:</label>
+                <input name="card" placeholder="4400 4321 8765 0987" max-length="16" required />
+                <div style="display: flex; gap: 10px;">
+                    <div>
+                        <label>Мерзімі:</label>
+                        <input placeholder="12/28" required />
+                    </div>
+                    <div>
+                        <label>CVV:</label>
+                        <input name="cvv" placeholder="***" type="password" max-length="3" required />
+                    </div>
+                </div>
+                <label>Электронды пошта (билет жіберу үшін):</label>
+                <input name="email" placeholder="myself@example.com" type="email" required />
+                <button class="btn" style="width: 100%; margin-top: 15px; font-size: 16px;">Билетті сатып алу</button>
+            </form>
+        </div>
+    `);
 });
 
-app.post("/session",(req,res)=>{
-  req.session.sessionTime = req.body.time;
-  res.redirect("/seats");
+/* =======================
+   TICKET GENERATOR (Соңғы Билетті шығару)
+======================= */
+app.post("/pay", (req, res) => {
+    if (!selectedMovie || !selectedCinema || !selectedSeat) return res.redirect("/");
+    let ticketId = Math.floor(Math.random() * 899999) + 100000;
+    
+    res.send(`
+        ${CSS_STYLE}
+        <h1 style="color: #2ecc71;">🎉 ТӨЛЕМ СӘТТІ ӨТТІ!</h1>
+        <p>Сіздің электронды билетіңіз дайын:</p>
+        
+        <div class="ticket">
+            <h2 style="text-align: center; margin-top: 0; letter-spacing: 2px;">CINEMA TICKET</h2>
+            <div style="text-align: center; font-size: 35px; margin-bottom: 20px;">🍿🎟️</div>
+            <p>🆔 Билет нөмірі: <b style="color: #ffcc00;">#${ticketId}</b></p>
+            <p>🎬 Фильм: <b>${selectedMovie.title}</b></p>
+            <p>🏢 Кинотеатр: <b>${selectedCinema}</b></p>
+            <p>🪑 Орын / Схема: <b style="background:#fff; color:#000; padding:2px 6px; border-radius:3px;">${selectedSeat}</b></p>
+            <hr style="border: 1px dashed #444; margin: 15px 0;">
+            <p style="text-align: center; font-size: 12px; color: #aaa;">📋 Кинотеатрға кіре берісте осы кодты көрсетіңіз.</p>
+        </div>
+        <br><br>
+        <a href="/" class="btn-secondary">🔙 Басты бетке қайту</a>
+    `);
 });
 
-const seats = ["A1","A2","A3","A4","B1","B2","B3","B4","VIP1","VIP2"];
-
-app.get("/seats",(req,res)=>{
-  const db = loadDB();
-
-  const movie = req.session.movie;
-  const sessionTime = req.session.sessionTime;
-
-  const takenSeats = db
-    .filter(t=>t.session === sessionTime && t.status==="active")
-    .map(t=>t.seat);
-
-  res.send(`
-    ${style}
-    <h2>🪑 Орын таңда</h2>
-
-    ${seats.map(s=>`
-      <form method="POST" action="/seat" style="display:inline">
-        <input type="hidden" name="seat" value="${s}">
-        <button ${takenSeats.includes(s) ? "disabled" : ""}>
-          ${s}
-        </button>
-      </form>
-    `).join("")}
-  `);
+/* =======================
+   START SERVER
+======================= */
+app.listen(3000, () => {
+    console.log("🚀 Сервер мына сілтемеде сәтті қосылды: http://localhost:3000");
 });
-
-app.post("/seat",(req,res)=>{
-  req.session.seat = req.body.seat;
-  res.redirect("/payment");
-});
-
-
-app.get("/payment",(req,res)=>{
-  const movie = req.session.movie;
-
-  res.send(`
-    ${style}
-    <h2>💳 Төлем</h2>
-
-    <form method="POST" action="/pay">
-      <input name="fullname" placeholder="Аты-жөні" required><br>
-
-      <input name="email" placeholder="Email" required><br>
-
-      <select name="type">
-        <option value="adult">Ересек</option>
-        <option value="student">Студент (-25%)</option>
-        <option value="school">Оқушы (-40%)</option>
-      </select><br>
-
-      <button>Төлеу</button>
-    </form>
-  `);
-});
-
-app.post("/pay",(req,res)=>{
-  const db = loadDB();
-
-  const movie = req.session.movie;
-  const cinema = req.session.cinema;
-  const sessionTime = req.session.sessionTime;
-  const seat = req.session.seat;
-
-  const {email, fullname, type} = req.body;
-
-
-  if(db.find(t=>t.email===email && t.movieId===movie.id && t.status==="active")){
-    return res.send("❌ Сіз бұл фильмге билет алып қойғансыз");
-  }
-
-  if(db.find(t=>t.seat===seat && t.session===sessionTime && t.status==="active")){
-    return res.send("❌ Бұл орын сатылған");
-  }
-
-  let price = movie.price;
-
-  if(type==="student") price *= 0.75;
-  if(type==="school") price *= 0.60;
-
-  const ticket = {
-    id: Date.now(),
-    email,
-    fullname,
-    movieId: movie.id,
-    movieTitle: movie.title,
-    cinema,
-    session: sessionTime,
-    seat,
-    type,
-    price,
-    status: "active",
-    createdAt: new Date().toISOString()
-  };
-
-  db.push(ticket);
-  saveDB(db);
-
-  res.send(`
-    ${style}
-    <h2>✅ Билет сатып алынды</h2>
-    <p>${movie.title}</p>
-    <p>Орын: ${seat}</p>
-    <p>Баға: ${price} ₸</p>
-
-    <a href="/">Басты бет</a>
-  `);
-});
-
-app.get("/delete",(req,res)=>{
-  res.send(`
-    ${style}
-    <h2>❌ Билетті қайтару</h2>
-
-    <form method="POST" action="/delete">
-      <input name="email" placeholder="Email" required><br>
-      <input name="movieTitle" placeholder="Фильм" required><br>
-      <button>Өшіру</button>
-    </form>
-  `);
-});
-
-app.post("/delete",(req,res)=>{
-  const db = loadDB();
-
-  const {email, movieTitle} = req.body;
-
-  const ticket = db.find(t=>
-    t.email===email &&
-    t.movieTitle===movieTitle &&
-    t.status==="active"
-  );
-
-  if(!ticket){
-    return res.send("❌ Билет табылмады");
-  }
-
-  const now = new Date();
-  const sessionTime = new Date(ticket.session.replace(" ", "T"));
-  const diffHours = (sessionTime - now) / (1000*60*60);
-
-  let refund = 0;
-
-  if(diffHours > 2){
-    refund = ticket.price * 0.5;
-  }
-
-  ticket.status = "cancelled";
-
-  saveDB(db);
-
-  res.send(`
-    ${style}
-    <h2>❌ Билет өшірілді</h2>
-    <p>Қайтарым: ${refund} ₸</p>
-    <a href="/">Басты бет</a>
-  `);
-});
-
-app.listen(3000, ()=>{
-  console.log("Server running on port 3000");
-});
-
