@@ -25,7 +25,6 @@ function saveDB(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
-
 let movies = [
   {
     id: 1,
@@ -34,16 +33,88 @@ let movies = [
     price: 2500,
     studentDiscount: 25,
     schoolDiscount: 40,
-    sessions: ["2026-06-10 15:00", "2026-06-10 18:00", "2026-06-10 20:00"]
+    sessions: ["2026-06-10 10:30", "2026-06-10 14:00", "2026-06-10 18:20", "2026-06-10 21:40"]
   },
   {
     id: 2,
-    title: "Аватар",
+    title: "Аватар: Путь воды",
     rating: 8.8,
     price: 3200,
     studentDiscount: 25,
     schoolDiscount: 40,
-    sessions: ["2026-06-10 16:00", "2026-06-10 19:00", "2026-06-10 21:00"]
+    sessions: ["2026-06-10 11:15", "2026-06-10 15:30", "2026-06-10 19:00", "2026-06-10 22:15"]
+  },
+  {
+    id: 3,
+    title: "Дюна 2",
+    rating: 8.9,
+    price: 3000,
+    studentDiscount: 20,
+    schoolDiscount: 35,
+    sessions: ["2026-06-10 09:45", "2026-06-10 13:20", "2026-06-10 17:10", "2026-06-10 20:50"]
+  },
+  {
+    id: 4,
+    title: "Оппенгеймер",
+    rating: 8.7,
+    price: 2800,
+    studentDiscount: 20,
+    schoolDiscount: 35,
+    sessions: ["2026-06-10 12:00", "2026-06-10 16:10", "2026-06-10 19:45", "2026-06-10 22:30"]
+  },
+  {
+    id: 5,
+    title: "Форсаж 10",
+    rating: 7.9,
+    price: 2600,
+    studentDiscount: 25,
+    schoolDiscount: 40,
+    sessions: ["2026-06-10 10:00", "2026-06-10 13:45", "2026-06-10 17:30", "2026-06-10 21:15"]
+  },
+  {
+    id: 6,
+    title: "Джокер",
+    rating: 8.5,
+    price: 2700,
+    studentDiscount: 20,
+    schoolDiscount: 35,
+    sessions: ["2026-06-10 11:40", "2026-06-10 15:00", "2026-06-10 18:40", "2026-06-10 22:00"]
+  },
+  {
+    id: 7,
+    title: "Человек-паук: Нет пути домой",
+    rating: 8.6,
+    price: 2900,
+    studentDiscount: 25,
+    schoolDiscount: 40,
+    sessions: ["2026-06-10 09:30", "2026-06-10 13:10", "2026-06-10 16:50", "2026-06-10 20:30"]
+  },
+  {
+    id: 8,
+    title: "Интерстеллар",
+    rating: 9.0,
+    price: 3500,
+    studentDiscount: 20,
+    schoolDiscount: 30,
+    sessions: ["2026-06-10 12:30", "2026-06-10 16:00", "2026-06-10 19:30", "2026-06-10 23:00"]
+  },
+  {
+    id: 9,
+    title: "Матрица",
+    rating: 8.4,
+    price: 2400,
+    studentDiscount: 25,
+    schoolDiscount: 40,
+    sessions: ["2026-06-10 10:50", "2026-06-10 14:20", "2026-06-10 18:00", "2026-06-10 21:20"]
+  },
+  {
+    id: 10,
+    title: "Гладиатор",
+    rating: 8.8,
+    price: 2800,
+    studentDiscount: 20,
+    schoolDiscount: 35,
+    sessions: ["2026-06-10 11:00", "2026-06-10 14:40", "2026-06-10 18:15", "2026-06-10 22:10"]
   }
 ];
 
