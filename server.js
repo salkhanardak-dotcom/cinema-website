@@ -304,7 +304,7 @@ app.post("/pay",(req,res)=>{
 
   res.send(`
     ${style}
-    <h2>✅ Билет сатып алынды</h2>
+    <h2>✅ Билет сатып алынд</h2>
     <p>${movie.title}</p>
     <p>Орын: ${seat}</p>
     <p>Баға: ${price} ₸</p>
